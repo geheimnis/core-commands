@@ -151,12 +151,6 @@ if __name__ == '__main__':
 
     try:
         cmd_argv = sys.argv[-1]
-        cmd_argv = msgpack.packb({
-            'options': {
-                'algorithm': 'MD5',
-            },
-            'text': ''
-        }).encode('hex')
         arguments = msgpack.unpackb(cmd_argv.decode('hex'))
 
         options = arguments['options']
