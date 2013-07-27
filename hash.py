@@ -12,6 +12,20 @@ must be base64-encoded, but they are decoded before hashed. The output format
 can be set by arguments, by default it is HEX. HMAC can also be calculated, by
 specifying commandline arguments.
 
+Arguments Passing
+-----------------
+It is not recommended to use python and run this program manually. The program
+is designed to be part of the 'invoke' command, and all it accepted, is
+Base64-encoded Msgpack-ed serial string containing all parameters. Command
+'python invoke.py' however, provides a more friendly commandline interface.
+
+Nevertheless, you may write your own programs, serialize all requests and send
+to this program.
+
+Output
+------
+The output is simply a hash. Depending on your options, it can be Base64, HEX,
+or raw.
 """
 
 class hash_generator:
