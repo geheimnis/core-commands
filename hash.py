@@ -80,22 +80,33 @@ class hash_generator:
         """Get or set a option.
 
         Usage:
-         .option()  # get a list of all options and their values.
+         .option()             # get a list of all options and their values.
          .option('algorithm')  # gets what algorithm is being used.
-         .option('algorithm','SHA-1')  # set to use SHA-1 as algorithm.
+         .option(
+            'algorithm',
+            'SHA-1'
+         )                     # set to use SHA-1 as algorithm.
+         .option({
+            'algorithm': 'SHA-1',
+            'output_format': 'HEX',
+          })                   # Batch set a number of options.
         """
         if len(argv) == 0:
             return self._options
         else:
-            option_key = argv[0]
-            option_values = argv[1:]
-            if not option_key in self._options.keys():
+            leading_arg = argv[0]
+            following_arg = argv[1:]
+            if type(leading_arg) == dict:
+                for each in leading_arg:
+                    self.option(each, leading_arg[each])
+                return self
+            elif not leading_arg in self._options.keys():
                 raise RuntimeError('Unrecognized option name.')
 
-        if len(option_values) == 0:
-            return self._options[option_key]
+        if len(following_arg) == 0:
+            return self._options[leading_arg]
         else:
-            self._options[option_key] = option_values[0]
+            self._options[leading_arg] = following_arg[0]
             self._update()
             return self
 
@@ -124,8 +135,8 @@ class hash_generator:
 
 if __name__ == '__main__':
     x = hash_generator()
-    print x \
-        .option('output_format','hex')\
-        .option('HMAC','key')\
-        .option('algorithm', 'SHA-1')\
-        .get_hmac('The quick brown fox jumps over the lazy dog') 
+    print x.option({
+        'output_format': 'hex',
+        'HMAC': 'key',
+        'algorithm': 'MD5'
+    }).get_hmac('The quick brown fox jumps over the lazy dog') 

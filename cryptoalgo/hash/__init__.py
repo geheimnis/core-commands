@@ -1,5 +1,5 @@
 __all__ = [
     'md5',
-#    'whirlpool',
+    'whirlpool',
     'sha1',
 ]
