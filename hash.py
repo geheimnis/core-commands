@@ -7,16 +7,16 @@ Generic Purpose Hashing Program
 
 Description
 -----------
-This program takes a string as input, and outputs hashed result. Input string
-must be base64-encoded, but they are decoded before hashed. The output format
-can be set by arguments, by default it is HEX. HMAC can also be calculated, by
-specifying commandline arguments.
+This program, when run on commandline, takes serialized and then encoded
+string as input. This input contains options and data to be hashed. Output
+string is simply the hash result. But the format varies depending on
+arguments, by default it is HEX. HMAC can also be calculated.
 
 Arguments Passing
 -----------------
 It is not recommended to use python and run this program manually. The program
 is designed to be part of the 'invoke' command, and all it accepted, is
-Base64-encoded Msgpack-ed serial string containing all parameters. Command
+HEX-encoded Msgpack-ed serial string containing all parameters. Command
 'python invoke.py' however, provides a more friendly commandline interface.
 
 Nevertheless, you may write your own programs, serialize all requests and send
@@ -124,33 +124,48 @@ class hash_generator:
             self._update()
             return self
 
-    def get_hash(self, text):
-        """Generate a hash."""
-        raw_digest = self._choosen_algorithm.hash(text)
-        return self._output(raw_digest)
-
-    def get_hmac(self, text):
-        """Generate a HMAC using given key.
-        
-        The key is preset by 'option' function.
-        """
+    def digest(self, text):
+        """Generate a hash or HMAC, depending on option 'HMAC' set or not."""
         if self._hmac_package == False:
-            raise RuntimeError('HMAC key not set.')
-
-        raw_digest = self._choosen_algorithm.hash(
-            self._hmac_package[0] +
-            self._choosen_algorithm.hash(
-                self._hmac_package[1] +
-                text
+            # Generate a hash
+            raw_digest = self._choosen_algorithm.hash(text)
+        else:
+            # Generate a HMAC
+            raw_digest = self._choosen_algorithm.hash(
+                self._hmac_package[0] +
+                self._choosen_algorithm.hash(
+                    self._hmac_package[1] +
+                    text
+                )
             )
-        )
         return self._output(raw_digest)
 
 
 if __name__ == '__main__':
-    x = hash_generator()
-    print x.option({
-        'output_format': 'hex',
-        'HMAC': 'key',
-        'algorithm': 'MD5'
-    }).get_hmac('The quick brown fox jumps over the lazy dog') 
+
+    import sys
+    
+    import msgpack
+
+    hasher = hash_generator()
+
+    try:
+        cmd_argv = sys.argv[-1]
+        cmd_argv = msgpack.packb({
+            'options': {
+                'algorithm': 'MD5',
+            },
+            'text': ''
+        }).encode('hex')
+        arguments = msgpack.unpackb(cmd_argv.decode('hex'))
+
+        options = arguments['options']
+        text = arguments['text']
+
+        hasher.option(options)
+    except TypeError:
+        raise RuntimeError('Unable to decode arguments.')
+    except KeyError:
+        raise RuntimeError('Hash program called without correct arguments.')
+
+    print hasher.digest(text)
