@@ -20,6 +20,8 @@ implementing this plan makes the program more complex.
 On the cipher
 -------------
 """
+import random
+import zlib
 
 import msgpack
 
@@ -70,7 +72,7 @@ class xipher(object):
             for x in shifting_list:
                 self.encrypt_chain.append((x[0],keyring[0:x[1]]))
                 keyring = keyring[x[1]:]
-            derivedkey = _derivekey.derive_key(derivedkey)
+            derivedkey = self._derive_key(derivedkey)
 
             shifting_first = shifting_list[0]
             shifting_list = shifting_list[1:]
