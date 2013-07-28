@@ -188,7 +188,7 @@ if __name__ == '__main__':
     x = xipher('a' * 512)
     y = xipher('a' * 512)
     src = 'hallo' * 100
-    times = 20
+    times = 1
 
     begin = time.time()
     for i in xrange(times): 
