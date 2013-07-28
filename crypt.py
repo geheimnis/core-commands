@@ -26,7 +26,7 @@ import zlib
 import msgpack
 
 from hash import hash_generator
-from cryptoalgo.symmetric import serpent, twofish, rijndael, xxtea
+from cryptoalgo.symmetric import serpent, twofish, rijndael, xxtea, blowfish
 
 class xipher(object):
 
@@ -99,22 +99,28 @@ class xipher(object):
             raise Exception("Length of bitstream is not sufficient.")
         result = [' '] * datalen
         for i in xrange(datalen):
-            result[i] = chr(ord(stream[i]) ^ ord(data[i]))
-        return ''.join(result)
+            result[i] = stream[i] ^ data[i] #chr(ord(stream[i]) ^ ord(data[i]))
+        result = [i for i in result]
+        return result
 
     def keystream(self,times,iv):
-        #print "Generating keystream of %d times basing on [%s]." % (times,iv.encode('hex'))
+        """Generate a counter stream with initial vector.
+        
+        'times' is how much the counter repeats.
+        'iv' is initial vector."""
+        
         ret = ''
-        block = ''
+        block = ['aaaabbbbccccdddd'] * times
         for i in xrange(times):
-            block += "%8s%8s" % (iv,hex(i)[2:])
+            block[i] = "%8s%8s" % (iv,hex(i)[2:])
+        block = ''.join(block)
 
         ciblk = self._encrypt_block(block)
-
-        #print "KeyStream:" + ciblk.encode('hex')
+        ciblk = [ord(i) for i in ciblk]
         return ciblk
 
-    def encrypt(self, data):    # Use CFB
+    def encrypt(self, data): 
+        """Encrypt data in CFB mode."""
         rand = ''
         for i in xrange(self.blocksize / 4 * 3):
             rand += chr(random.randint(0,255))
@@ -133,14 +139,11 @@ class xipher(object):
         if datalen % self.blocksize != 0:
             times += 1
 
-        keystream = self.keystream(times,iv)
-        #print "KeyStream:" + keystream.encode('hex')
-        
-#        teststart = time.time()
-        result = rand + str(iv0) + str(self._xor_stream(keystream,data))
-#        testend = time.time()
+        keystream = self.keystream(times, iv)
+        data = [ord(i) for i in data]
 
-#        print "Xor Time Cost: %f seconds." % (testend - teststart)
+        xor_result = [chr(i) for i in self._xor_stream(keystream, data)]
+        result = rand + str(iv0) + ''.join(xor_result)
         
         return result
 
@@ -158,9 +161,11 @@ class xipher(object):
         if datalen % self.blocksize != 0:
             times += 1
 
-        keystream = self.keystream(times,iv)
+        keystream = self.keystream(times, iv)
+        data = [ord(i) for i in data]
                 
-        result = self._xor_stream(keystream,data)
+        xor_result = self._xor_stream(keystream,data)
+        result = ''.join([chr(i) for i in xor_result])
         digest = hex(abs(int(zlib.crc32(rand + result))))[2:10]
         #if len(digest) < self.ivsize:
         #    digest += (self.ivsize - len(iv)) * '*'
@@ -176,5 +181,20 @@ class xipher(object):
         return 1
 
 if __name__ == '__main__':
+
+    import time
+
+
     x = xipher('a' * 512)
-    print x.encrypt('hallo')
+    y = xipher('a' * 512)
+    src = 'hallo' * 100
+    times = 20
+
+    begin = time.time()
+    for i in xrange(times): 
+        ctext = x.encrypt(src)
+        ptext = y.decrypt(ctext)
+    end = time.time()
+
+    print len(src) * times / (end-begin), 'bytes per second.'
+        
