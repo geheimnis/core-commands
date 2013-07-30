@@ -59,7 +59,7 @@ class xipher:
 
         shifting_list = self.cipherlist[:]
         self.encrypt_chain = []
-        derivedkey = self._derive_key(key)
+        derivedkey = self._derive_key(key[:])
         key = None
         del key
         for i in xrange(len(self.cipherlist)):

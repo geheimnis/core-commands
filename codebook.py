@@ -27,6 +27,8 @@ provides a decrypting key to database. The database should always stored
 encrypted.
 """
 import os
+import random
+import shelve
 import sys
 
 from crypt import xipher
@@ -74,21 +76,23 @@ class codebook_manager:
             # Pick a random database encrypting key.
             database_encrypt_key = \
                 ''.join(chr(random.randint(0,255)) for i in xrange(256))
+            self._database_cryptor = xipher(database_encrypt_key)
             # Encrypt the above key using 'database_access_key'.
-            encrypted_key = xipher.encrypt(database_encrypt_key)
+            encrypted_key = \
+                xipher(database_access_key).encrypt(database_encrypt_key)
             # Save the encrypted above key in our new database.
             self._database['options'] = {'key': encrypted_key}
             self._database['books'] = {}
         else:
             try:
-                database_encrypt_key = xipher.decrypt(
+                database_encrypt_key = xipher(database_access_key).decrypt(
                     self._database['options']['key']
                 )
-            except:
+                self._database_cryptor = xipher(database_encrypt_key)
+            except Exception,e:
+                print e
                 raise RuntimeError('Failed to decrypt database.')
 
-        # Set up encryptor
-        self._database_cryptor = xipher(database_encrypt_key)
         # Clear keys
         database_access_key = None
         database_encrypt_key = None
@@ -106,7 +110,7 @@ class codebook_manager:
             )
 
         codebook_length = len(credentials)
-        if codebook_length > self.CODEBOOK_MAX_LENGTH or
+        if codebook_length > self.CODEBOOK_MAX_LENGTH or \
             codebook_length < self.CODEBOOK_MIN_LENGTH:
             raise RuntimeError('Improper codebook length.')
 
@@ -175,4 +179,5 @@ class codebook_manager:
         pass
 
 if __name__ == '__main__':
-    pass
+    x = codebook_manager('test','test')
+
