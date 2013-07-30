@@ -28,7 +28,7 @@ import msgpack
 from hash import hash_generator
 from cryptoalgo.symmetric import serpent, twofish, rijndael, xxtea, blowfish
 
-class xipher(object):
+class xipher:
 
     cipherlist = [
         [serpent.Serpent, serpent.key_size],
