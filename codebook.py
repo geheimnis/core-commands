@@ -93,8 +93,7 @@ class codebook_manager:
         self._database_cryptor = xipher(database_encrypt_key)
 
         # Clear keys
-        database_access_key = None
-        database_encrypt_key = None
+        database_access_key, database_encrypt_key = None, None
         del database_access_key, database_encrypt_key
 
     def add(self, user_id, credentials, description='', max_usage=False):
@@ -133,8 +132,11 @@ class codebook_manager:
         if self._database['books'][user_id].has_key(codebook_id):
             raise Exception('Codebook exists.')
 
+        piece_key = ''.join(chr(random.randint(0,255)) for i in xrange(256))
+        piece_key_encrypted = self._database_cryptor.encrypt(piece_key)
         insert_piece = {
-            'credentials': self._database_cryptor.encrypt(credentials),
+            'credentials': xipher(piece_key).encrypt(credentials),
+            'encrypt_key': piece_key_encrypted,
             'length': codebook_length,
             'description': description,
             'max_usage': max_usage,
@@ -142,13 +144,12 @@ class codebook_manager:
         }
         self._database['books'][user_id][codebook_id] = insert_piece
 
+        piece_key, insert_piece = None
+        del piece_key, insert_piece
+
     def delete_codebook(self, codebook_id):
         try:
-            user_id_find = codebook_id.find('-')
-            if user_id_find >= 0:
-                user_id = codebook_id[:user_id_find]
-            else:
-                raise Exception()
+            user_id = self._get_user_id(codebook_id)
             if self._database['books'].has_key(user_id):
                 del self._database['books'][user_id][codebook_id]
         except:
@@ -194,7 +195,19 @@ class codebook_manager:
         Returns a tuple: (KeyValue, Hints), where KeyValue is the new key, and
         Hints a string indicating how this key can be reconstructed
         accordingly."""
-        pass
+        try:
+            user_id = self._get_user_id(codebook_id)
+            codebook = self._database['books'][user_id][codebook_id]
+        except:
+            raise Exception('Unable to locate this codebook to get keys.')
+
+        piece_key = self._database_cryptor.decrypt(codebook['encrypt_key'])
+        credentials = xipher(piece_key).decrypt(codebook['credentials'])
+
+        # XXX
+
+        credentials, piece_key = None, None
+        del credentials, piece_key
 
     def key_reconstruct(self, hints):
         """Reconstruct a key.
@@ -207,7 +220,26 @@ class codebook_manager:
         Returns a string, when key successfully reconstructed.
         Raises Exceptions, when key reconstruct process cannot be
         accomplished."""
-        pass
+        try:
+            user_id = self._get_user_id(codebook_id)
+            codebook = self._database['books'][user_id][codebook_id]
+        except:
+            raise Exception('Unable to locate this codebook to get keys.')
+
+        piece_key = self._database_cryptor.decrypt(codebook['encrypt_key'])
+        credentials = xipher(piece_key).decrypt(codebook['credentials'])
+
+        # XXX
+
+        credentials, piece_key = None, None
+        del credentials, piece_key
+
+    def _get_user_id(self, codebook_id):
+        user_id_find = codebook_id.find('-')
+        if user_id_find >= 0:
+            return codebook_id[:user_id_find]
+        else:
+            return False
 
 if __name__ == '__main__':
     x = codebook_manager('test','test')
