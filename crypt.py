@@ -185,7 +185,7 @@ if __name__ == '__main__':
     import time
 
 
-    x = xipher('a' * 512)
+    x = xipher('a' * 10)
     y = xipher('a' * 512)
     src = 'hallo' * 100
     times = 1

@@ -33,8 +33,53 @@ from crypt import xipher
 
 class codebook_manager:
 
-    def __init__(self, path_to_database, database_encrypt_key):
-        pass
+    _database = None
+    _database_encrypt_key = None
+
+    def __init__(self, path_to_database, database_access_key):
+        """Initialize Codebook Manager.
+
+        This will load the database, if path exists. If not, will try to
+        create and initialize that. Database Access Key will be used to
+        decrypt the database global encrypting key, a value stored in
+        database, or when initializing, encrypt the new database global
+        encrypting key."""
+        cryptor = xipher(database_access_key)
+
+        create_db = True
+        if os.path.isfile(path_to_database):
+            try:
+                # Attempt to load the database.
+                self._database = shelve.open(
+                    path_to_database,
+                    writeback=True,
+                    flag='rw',
+                )
+                create_db = False
+            except:
+                pass
+        if create_db == True:
+            # Create a database.
+            self._database = shelve.open(
+                path_to_database,
+                writeback=True,
+                flag='n',
+            )
+            # Pick a random database encrypting key.
+            self._database_encrypt_key = \
+                ''.join(chr(random.randint(0,255)) for i in xrange(256))
+            # Encrypt the above key using 'database_access_key'.
+            encrypted_key = xipher.encrypt(self._database_encrypt_key)
+            # Save the encrypted above key in our new database.
+            self._database['options'] = {'key': encrypted_key}
+            self._database['books'] = {}
+        else:
+            try:
+                self._database_encrypt_key = xipher.decrypt(
+                    self._database['options']['key']
+                )
+            except:
+                raise RuntimeError('Failed to decrypt database.')
 
     def add(self, user_id, credentials, description='', max_usage=False):
         pass
@@ -64,8 +109,9 @@ class codebook_manager:
         and to construct a key. This may not always succeed, while we may not
         have the proper codebook.
 
-        Returns a string, when key successfully reconstructed. Returns False,
-        when we can not complete this process."""
+        Returns a string, when key successfully reconstructed.
+        Raises Exceptions, when key reconstruct process cannot be
+        accomplished."""
         pass
 
 if __name__ == '__main__':
