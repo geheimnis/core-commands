@@ -46,13 +46,6 @@ class xipher:
 
     def __init__(self, key):
         """Initialize this class using a 'key'."""
-        keylen = 0
-        for x in self.cipherlist:
-            keylen += x[1]
-
-        if len(key) < keylen:
-            raise Exception("Key too short. At least %d bytes required." % keylen)
-        
         self._whirlpool_hasher = hash_generator().option({
             'output_format': 'raw',
             'algorithm': 'WHIRLPOOL',
@@ -66,7 +59,9 @@ class xipher:
 
         shifting_list = self.cipherlist[:]
         self.encrypt_chain = []
-        derivedkey = key[:]
+        derivedkey = self._derive_key(key)
+        key = None
+        del key
         for i in xrange(len(self.cipherlist)):
             keyring = derivedkey[:]
             for x in shifting_list:
@@ -77,6 +72,8 @@ class xipher:
             shifting_first = shifting_list[0]
             shifting_list = shifting_list[1:]
             shifting_list.append(shifting_first)
+        derivedkey = None
+        del derivedkey
 
     def _derive_key(self, oldkey):
         key_whirlpool = self._whirlpool_hasher.digest(oldkey)
@@ -185,7 +182,7 @@ if __name__ == '__main__':
     import time
 
 
-    x = xipher('a' * 10)
+    x = xipher('a' * 512)
     y = xipher('a' * 512)
     src = 'hallo' * 100
     times = 1

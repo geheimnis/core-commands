@@ -34,7 +34,7 @@ from crypt import xipher
 class codebook_manager:
 
     _database = None
-    _database_encrypt_key = None
+    _database_cryptor = None
 
     def __init__(self, path_to_database, database_access_key):
         """Initialize Codebook Manager.
@@ -66,20 +66,27 @@ class codebook_manager:
                 flag='n',
             )
             # Pick a random database encrypting key.
-            self._database_encrypt_key = \
+            database_encrypt_key = \
                 ''.join(chr(random.randint(0,255)) for i in xrange(256))
             # Encrypt the above key using 'database_access_key'.
-            encrypted_key = xipher.encrypt(self._database_encrypt_key)
+            encrypted_key = xipher.encrypt(database_encrypt_key)
             # Save the encrypted above key in our new database.
             self._database['options'] = {'key': encrypted_key}
             self._database['books'] = {}
         else:
             try:
-                self._database_encrypt_key = xipher.decrypt(
+                database_encrypt_key = xipher.decrypt(
                     self._database['options']['key']
                 )
             except:
                 raise RuntimeError('Failed to decrypt database.')
+
+        # Set up encryptor
+        self._database_cryptor = xipher(database_encrypt_key)
+        # Clear database access key
+        database_access_key = None
+        database_encrypt_key = None
+        del database_access_key, database_encrypt_key
 
     def add(self, user_id, credentials, description='', max_usage=False):
         pass
