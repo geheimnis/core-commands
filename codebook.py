@@ -98,8 +98,17 @@ class codebook_manager:
         del database_access_key, database_encrypt_key
 
     def add(self, user_id, credentials, description='', max_usage=False):
+        """Add a codebook.
+
+        'user_id' should be a HEX-coded identifier. 'credentials' is the very
+        confidential data in this codebook in plaintext. 'max_usage' set to
+        False, indicating infinitive usage or a integer > 0 to limit the times
+        of usage."""
         if not self._database['books'].has_key(user_id):
             self._database['books'] = {user_id: {}}
+
+        if user_id.lower().translate(None,'0123456789abcdef') != '':
+            raise RuntimeError('Invalid user ID. Must be HEX formatted.')
 
         if not (
             (max_usage == False) or
@@ -115,7 +124,10 @@ class codebook_manager:
 
         codebook_id =\
             user_id + '-' +\
-            hash_generator().option('algorithm','SHA-1').digest(credentials)
+            hash_generator().option({
+                'algorithm': 'SHA-1',
+                'output_format': 'HEX',
+            }).digest(credentials)
         codebook_id = codebook_id.upper()
 
         if self._database['books'][user_id].has_key(codebook_id):
@@ -123,14 +135,33 @@ class codebook_manager:
 
         insert_piece = {
             'credentials': self._database_cryptor.encrypt(credentials),
+            'length': codebook_length,
             'description': description,
             'max_usage': max_usage,
             'usage': 0,
         }
         self._database['books'][user_id][codebook_id] = insert_piece
 
-    def delete(self, codebook_id):
-        pass
+    def delete_codebook(self, codebook_id):
+        try:
+            user_id_find = codebook_id.find('-')
+            if user_id_find >= 0:
+                user_id = codebook_id[:user_id_find]
+            else:
+                raise Exception()
+            if self._database['books'].has_key(user_id):
+                del self._database['books'][user_id][codebook_id]
+        except:
+            return False
+        return True
+
+    def delete_user(self, user_id):
+        try:
+            if self._database['books'].has_key(user_id):
+                del self._database['books'][user_id]
+        except:
+            return False
+        return True
 
     def query(self, user_id=None):
         """Query user ids or code books.
@@ -146,6 +177,7 @@ class codebook_manager:
                         'description': codebook['description'],
                         'usage': codebook['usage'],
                         'max_usage': codebook['max_usage'],
+                        'length': codebook['length'],
                     }
                 return retval
             else:
@@ -179,4 +211,10 @@ class codebook_manager:
 
 if __name__ == '__main__':
     x = codebook_manager('test','test')
+#    print x.query('001')
 
+#    x.add('001',''.join(chr(random.randint(0,255)) for i in xrange(2048)), 'Description', False)
+
+    print x.query()
+
+    print x.query('001')
