@@ -76,7 +76,6 @@ class codebook_manager:
             # Pick a random database encrypting key.
             database_encrypt_key = \
                 ''.join(chr(random.randint(0,255)) for i in xrange(256))
-            self._database_cryptor = xipher(database_encrypt_key)
             # Encrypt the above key using 'database_access_key'.
             encrypted_key = \
                 xipher(database_access_key).encrypt(database_encrypt_key)
@@ -88,10 +87,10 @@ class codebook_manager:
                 database_encrypt_key = xipher(database_access_key).decrypt(
                     self._database['options']['key']
                 )
-                self._database_cryptor = xipher(database_encrypt_key)
             except Exception,e:
                 print e
                 raise RuntimeError('Failed to decrypt database.')
+        self._database_cryptor = xipher(database_encrypt_key)
 
         # Clear keys
         database_access_key = None
