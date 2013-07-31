@@ -26,10 +26,13 @@ The codebook manager cooperates with Global Key Management System, which
 provides a decrypting key to database. The database should always stored
 encrypted.
 """
+import math
 import os
 import random
 import shelve
 import sys
+
+import msgpack
 
 from crypt import xipher
 from hash import hash_generator
@@ -144,7 +147,7 @@ class codebook_manager:
         }
         self._database['books'][user_id][codebook_id] = insert_piece
 
-        piece_key, insert_piece = None
+        piece_key, insert_piece = None, None
         del piece_key, insert_piece
 
     def delete_codebook(self, codebook_id):
@@ -186,7 +189,7 @@ class codebook_manager:
         else:
             return self._database['books'].keys()
 
-    def key_new(self, codebook_id):
+    def key_new(self, codebook_id, parts=4, key_bytes=128):
         """Read a codebook and make up a new key.
 
         The codebook ID must be provided. Then a new key is generated basing
@@ -202,12 +205,29 @@ class codebook_manager:
             raise Exception('Unable to locate this codebook to get keys.')
 
         piece_key = self._database_cryptor.decrypt(codebook['encrypt_key'])
-        credentials = xipher(piece_key).decrypt(codebook['credentials'])
+        credentials = codebook['credentials']
+        total_length = codebook['length']
 
-        # XXX
+        part_length = int(math.ceil(key_bytes * 1.0 / parts))
+        divide_parts = int(math.floor(total_length * 0.5 / part_length))
+        used_parts = random.sample(xrange(divide_parts), parts)
+        decryptor = xipher(piece_key)
+        hints = [codebook_id, key_bytes,]
+        raw_key = ''
+        for i in used_parts:
+            offset = i * part_length + random.randint(0, part_length)
+            raw_key += decryptor.decrypt_partial(
+                credentials,
+                offset,
+                offset+part_length)
+            hints.append((offset, part_length))
 
-        credentials, piece_key = None, None
-        del credentials, piece_key
+        raw_key = raw_key[:key_bytes]
+
+        decryptor, piece_key = None, None
+        del decryptor, piece_key
+
+        return (raw_key, msgpack.packb(hints))
 
     def key_reconstruct(self, hints):
         """Reconstruct a key.
@@ -221,18 +241,39 @@ class codebook_manager:
         Raises Exceptions, when key reconstruct process cannot be
         accomplished."""
         try:
+            raw_key = ''
+            hints = msgpack.unpackb(hints)
+            codebook_id = hints.pop(0)
+            key_bytes = hints.pop(0)
+
             user_id = self._get_user_id(codebook_id)
             codebook = self._database['books'][user_id][codebook_id]
-        except:
-            raise Exception('Unable to locate this codebook to get keys.')
 
-        piece_key = self._database_cryptor.decrypt(codebook['encrypt_key'])
-        credentials = xipher(piece_key).decrypt(codebook['credentials'])
+            piece_key = self._database_cryptor.decrypt(
+                codebook['encrypt_key']
+            )
+            decryptor = xipher(piece_key)
 
-        # XXX
+            for hint in hints:
+                part_offset = hint[0]
+                part_length = hint[1]
+                key_part = decryptor.decrypt_partial(
+                    codebook['credentials'],
+                    part_offset,
+                    part_offset + part_length
+                )
+                raw_key += key_part
+            raw_key = raw_key[:key_bytes]
+        except Exception,e:
+            decryptor, piece_key = None, None
+            del decryptor, piece_key
+            print e
+            raise RuntimeError('Unable to reconstruct the key.')
 
-        credentials, piece_key = None, None
-        del credentials, piece_key
+        decryptor, piece_key = None, None
+        del decryptor, piece_key
+
+        return raw_key
 
     def _get_user_id(self, codebook_id):
         user_id_find = codebook_id.find('-')
@@ -245,8 +286,15 @@ if __name__ == '__main__':
     x = codebook_manager('test','test')
 #    print x.query('001')
 
-#    x.add('001',''.join(chr(random.randint(0,255)) for i in xrange(2048)), 'Description', False)
 
-    print x.query()
+    got = x.query('001')
 
-    print x.query('001')
+    print got
+
+    raw_key, hints = x.key_new(got.keys()[0])
+
+    rk2 = x.key_reconstruct(hints)
+    print repr(hints)
+
+    print rk2 == raw_key
+    print rk2.encode('hex')
