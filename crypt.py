@@ -27,20 +27,32 @@ import zlib
 import msgpack
 
 from hash import hash_generator
-from cryptoalgo.symmetric import serpent, twofish, rijndael, xxtea, blowfish
+from cryptoalgo.symmetric import serpent, rijndael, xxtea
+
+class dummycipher_sha256:
+
+    key_size = 32
+
+    def __init__(self, key):
+        self.hmac = hash_generator().option({
+            'algorithm': 'SHA-256',
+            'HMAC': key,
+            'output_format': 'RAW',
+        })
+
+    def encrypt(self, data):
+        return self.hmac.digest(data)
 
 class xipher:
 
     cipherlist = [
         [serpent.Serpent, serpent.key_size],
-#        [rijndael.get_class(), rijndael.key_size],
         [rijndael.get_class(), rijndael.key_size],
-#        [twofish.Twofish, twofish.key_size],
-        [rijndael.get_class(), rijndael.key_size],
+        [dummycipher_sha256, dummycipher_sha256.key_size],
         [xxtea.XXTEA, xxtea.key_size],
     ]
-    blocksize  = 16
-    ivsize = 8
+    blocksize = 32 
+    ivsize = 16
 
     encrypt_chain = []
 
@@ -109,9 +121,9 @@ class xipher:
         'times' is how much the counter repeats.
         'iv' is initial vector."""
         ret = ''
-        blocks = ['aaaabbbbccccdddd'] * (bis - von)
+        blocks = ['aaaabbbbccccddddeeeeffffgggghhhh'] * (bis - von)
         for i in xrange(von, bis):
-            blocks[i-von] = self._encrypt_block("%8s%8s" % (iv,hex(i)[2:]))
+            blocks[i-von] = self._encrypt_block("%16s%16s" % (iv,hex(i)[2:]))
         blocks = ''.join(blocks)
 
         ciblk = [ord(i) for i in blocks]
