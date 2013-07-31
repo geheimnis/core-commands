@@ -186,14 +186,17 @@ class xipher:
 
         # generate CFB keystream
         total_length = len(data)
-        if not (end > start and end <= total_length and start >=0):
+        if end > total_length: end = total_length
+        if start < 0: start = 0
+        if end < start:
             raise RuntimeError('Invalid seeking parameters.')
 
         stream_start_block = int(math.floor(start * 1.0 / self.blocksize))
         stream_end_block = int(math.ceil(end * 1.0 / self.blocksize))
 
         stream_start_pos = stream_start_block * self.blocksize
-        stream_end_pos = stream_end_block * self.blocksize 
+        stream_end_pos = stream_end_block * self.blocksize
+        if stream_end_pos > total_length: stream_end_pos = total_length
 
         keystream = self.keystream(
             iv,
@@ -204,12 +207,13 @@ class xipher:
         xor_result = self._xor_stream(keystream, data)
         result = ''.join([chr(i) for i in xor_result])
 
-        result = result[start - stream_start_pos:end - stream_end_pos]
+        result = result[start - stream_start_pos:]
+        if stream_end_pos - end > 0: result = result[:end - stream_end_pos]
 
         return result
 
     def get_version(self):
-        return 1
+        return 2
 
 if __name__ == '__main__':
 
@@ -221,9 +225,9 @@ if __name__ == '__main__':
     
     src = ''
     for i in xrange(15):
-        src += '+--%3d--|' % i
+        src += '+--%03d---|' % i
 
-    start, end = 20, 40
+    start, end = 1, 149 
     ctext = x.encrypt(src)
     ptext = y.decrypt_partial(ctext, start, end)
     print '*' * start + ptext
