@@ -216,19 +216,61 @@ class xipher:
         return 2
 
 if __name__ == '__main__':
+    import sys
 
-    import time
+    try:
+        cmd_argv = sys.argv[-1]
+        arguments = msgpack.unpackb(cmd_argv.decode('hex'))
 
+        options = arguments['options']
+        text = arguments['text']
 
-    x = xipher('a' * 512)
-    y = xipher('a' * 512)
-    
-    src = ''
-    for i in xrange(15):
-        src += '+--%03d---|' % i
+        option_direction = options['direction']
+        option_key_source = options['key_source']
 
-    start, end = 1, 149 
-    ctext = x.encrypt(src)
-    ptext = y.decrypt_partial(ctext, start, end)
-    print '*' * start + ptext
-    print y.decrypt(ctext)
+        if option_key_source == 'codebook':
+
+            from codebook import codebook_manager
+            codebook_db_path = options['codebook_database_path']
+            codebook_db_password = options['codebook_database_key']
+
+            codebook_db = codebook_manager(
+                codebook_db_path,
+                codebook_db_password
+            )
+
+            if option_direction == 'encrypt':
+                codebook_id = options['codebook_id']
+                try:
+                    encrypt_new_key, new_key_hints =\
+                        codebook_db.key_new(codebook_id)
+                    ciphertext = xipher(encrypt_new_key).encrypt(text)
+                    output_piece = {
+                        't': 'sc',
+                        'o': {
+                            'h': new_key_hints,
+                        },
+                        'd': ciphertext,
+                    }
+                    print msgpack.packb(output_piece)
+                    exit()
+                except:
+                    pass
+            elif option_direction == 'decrypt':
+                try:
+                    input_piece = msgpack.unpackb(text)
+                    if input_piece['t'] != 'sc':
+                        raise RuntimeError('Not symmetric ciphertext.')
+
+                    hints = input_piece['o']['h']
+                    decrypt_key = codebook_db.key_reconstruct(hints)
+                    plaintext = xipher(decrypt_key).decrypt(input_piece['d'])
+                    print plaintext
+                except:
+                    pass
+                    
+        elif option_key_source == 'raw':
+            pass
+
+    except:
+        pass
