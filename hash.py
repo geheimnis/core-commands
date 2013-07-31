@@ -62,6 +62,7 @@ class hash_generator:
         self._update()
 
     def _output(self, binary_digest):
+        print 'output',self._options['algorithm'] , self._options['output_format']
         output_format = self._options['output_format'].upper()
         if output_format == 'HEX': return binary_digest.encode('hex')
         if output_format == 'BASE64': return binary_digest.encode('base64')
@@ -126,6 +127,7 @@ class hash_generator:
 
     def digest(self, text):
         """Generate a hash or HMAC, depending on option 'HMAC' set or not."""
+        print 'digest',self._options['algorithm'] , self._options['output_format']
         if self._hmac_package == False:
             # Generate a hash
             raw_digest = self._choosen_algorithm.hash(text)

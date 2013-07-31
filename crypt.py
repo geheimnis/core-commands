@@ -20,6 +20,7 @@ implementing this plan makes the program more complex.
 On the cipher
 -------------
 """
+import hashlib
 import math
 import random
 import zlib
@@ -58,6 +59,7 @@ class xipher:
 
     _whirlpool_hasher = None
     _sha512_hasher = None
+    _md5_hasher = None
 
     def __init__(self, key):
         """Initialize this class using a 'key'."""
@@ -69,6 +71,11 @@ class xipher:
         self._sha512_hasher = hash_generator().option({
             'output_format': 'raw',
             'algorithm': 'SHA-512',
+            'HMAC': False,
+        })
+        self._md5_hasher = hash_generator().option({
+            'output_format': 'HEX',
+            'algorithm': 'MD5',
             'HMAC': False,
         })
 
@@ -132,14 +139,16 @@ class xipher:
     def encrypt(self, data): 
         """Encrypt data in CFB mode."""
         rand = ''
-        for i in xrange(self.blocksize / 4 * 3):
+        for i in xrange(self.blocksize):
             rand += chr(random.randint(0,255))
-        rand = rand.encode('base64')[0:self.blocksize]
+        rand = rand.encode('base64')[:self.blocksize]
 
-        iv = hex(abs(int(zlib.crc32(rand + data))))[2:2+self.ivsize]
-        if len(iv) < self.ivsize:
-            iv += (self.ivsize - len(iv)) * '*'
+        iv = self._md5_hasher.digest(rand + data)[:self.ivsize]
+        print '## ',iv
         
+        iv = hashlib.md5(rand + data).hexdigest()[:self.ivsize]
+        print '** ',iv
+
         iv0 = iv[:]
         
         # generate CFB keystream
@@ -154,17 +163,19 @@ class xipher:
         data = [ord(i) for i in data]
 
         xor_result = [chr(i) for i in self._xor_stream(keystream, data)]
-        result = rand + str(iv0) + ''.join(xor_result)
+        result = rand + iv0 + ''.join(xor_result)
         
         return result
 
     def decrypt(self,data):
-        rand = data[0:self.blocksize]
+        rand = data[:self.blocksize]
         data = data[self.blocksize:]
-        # generate CFB iv
-        iv = data[0:self.ivsize].strip()
-        
+
+        # extract CFB iv
+        iv = data[:self.ivsize]
+        orig_iv = iv[:]
         data = data[self.ivsize:]
+
         # generate CFB keystream
         datalen = len(data)
 
@@ -177,15 +188,23 @@ class xipher:
                 
         xor_result = self._xor_stream(keystream,data)
         result = ''.join([chr(i) for i in xor_result])
-        digest = hex(abs(int(zlib.crc32(rand + result))))[2:10]
-        #if len(digest) < self.ivsize:
-        #    digest += (self.ivsize - len(iv)) * '*'
-         
 
-        if digest == iv[0:len(digest)]:
-            #print 'verified.'
+        #iv = self._md5_hasher.digest(rand + data)[:self.ivsize]
+        check_iv = self._md5_hasher.digest(rand + result)[:self.ivsize]
+
+        print '## ',check_iv
+        check_iv = self._md5_hasher.digest(rand + result)[:self.ivsize]
+
+        print '## ',check_iv
+        check_iv = hashlib.md5(rand + result).hexdigest()[:self.ivsize]
+        print '** ',check_iv
+        
+        if check_iv == orig_iv:
+            print 'verified.'
             return result
         else:
+            print check_iv
+            print orig_iv
             raise Exception("Cannot decrypt. Data corrupted or incorrect key.")
 
     def decrypt_partial(self, data, start, end):

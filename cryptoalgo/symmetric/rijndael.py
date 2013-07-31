@@ -45,9 +45,9 @@ except ImportError:
 # Settings.
 #
 
-BLOCK_SIZE = 16 # Rijndael-128
+#BLOCK_SIZE = 16 # Rijndael-128
 #BLOCK_SIZE = 24 # Rijndael-192
-#BLOCK_SIZE = 32 # Rijndael-256
+BLOCK_SIZE = 32 # Rijndael-256
 
 #
 # Public.

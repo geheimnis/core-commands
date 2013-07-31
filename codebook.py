@@ -288,15 +288,16 @@ if __name__ == '__main__':
     x = codebook_manager('test','test')
 #    print x.query('001')
 
+#    x.add('001',''.join(chr(random.randint(0,255)) for i in xrange(1024)),'Hello')
 
     got = x.query('001')
 
     print got
-
+"""
     raw_key, hints = x.key_new(got.keys()[0])
 
     rk2 = x.key_reconstruct(hints)
     print repr(hints)
 
     print rk2 == raw_key
-    print rk2.encode('hex')
+    print rk2.encode('hex')"""
