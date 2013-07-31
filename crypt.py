@@ -20,6 +20,7 @@ implementing this plan makes the program more complex.
 On the cipher
 -------------
 """
+import math
 import random
 import zlib
 
@@ -32,7 +33,9 @@ class xipher:
 
     cipherlist = [
         [serpent.Serpent, serpent.key_size],
-        [twofish.Twofish, twofish.key_size],
+#        [rijndael.get_class(), rijndael.key_size],
+        [rijndael.get_class(), rijndael.key_size],
+#        [twofish.Twofish, twofish.key_size],
         [rijndael.get_class(), rijndael.key_size],
         [xxtea.XXTEA, xxtea.key_size],
     ]
@@ -100,20 +103,18 @@ class xipher:
         result = [i for i in result]
         return result
 
-    def keystream(self,times,iv):
+    def keystream(self, iv, bis, von=0):
         """Generate a counter stream with initial vector.
         
         'times' is how much the counter repeats.
         'iv' is initial vector."""
-        
         ret = ''
-        block = ['aaaabbbbccccdddd'] * times
-        for i in xrange(times):
-            block[i] = "%8s%8s" % (iv,hex(i)[2:])
-        block = ''.join(block)
+        blocks = ['aaaabbbbccccdddd'] * (bis - von + 1)
+        for i in xrange(von, bis):
+            blocks[i] = self._encrypt_block("%8s%8s" % (iv,hex(i)[2:]))
+        blocks = ''.join(blocks)
 
-        ciblk = self._encrypt_block(block)
-        ciblk = [ord(i) for i in ciblk]
+        ciblk = [ord(i) for i in blocks]
         return ciblk
 
     def encrypt(self, data): 
@@ -136,7 +137,8 @@ class xipher:
         if datalen % self.blocksize != 0:
             times += 1
 
-        keystream = self.keystream(times, iv)
+        keystream = self.keystream(iv, times)
+
         data = [ord(i) for i in data]
 
         xor_result = [chr(i) for i in self._xor_stream(keystream, data)]
@@ -158,7 +160,7 @@ class xipher:
         if datalen % self.blocksize != 0:
             times += 1
 
-        keystream = self.keystream(times, iv)
+        keystream = self.keystream(iv, times)
         data = [ord(i) for i in data]
                 
         xor_result = self._xor_stream(keystream,data)
@@ -174,6 +176,37 @@ class xipher:
         else:
             raise Exception("Cannot decrypt. Data corrupted or incorrect key.")
 
+    def decrypt_partial(self, data, start, end):
+        rand = data[0:self.blocksize]
+        data = data[self.blocksize:]
+        # generate CFB iv
+        iv = data[0:self.ivsize].strip()
+        
+        data = data[self.ivsize:]       # pure encrypted data
+
+        # generate CFB keystream
+        total_length = len(data)
+        if not (end > start and end <= total_length and start >=0):
+            raise RuntimeError('Invalid seeking parameters.')
+
+        stream_start_block = int(math.floor(start * 1.0 / self.blocksize))
+        stream_end_block = int(math.ceil(end * 1.0 / self.blocksize))
+        stream_start_pos = stream_start_block * self.blocksize
+        stream_end_pos = stream_end_block * self.blocksize 
+
+        keystream = self.keystream(
+            iv,
+            stream_end_block,
+            stream_start_block
+        )
+        data = [ord(i) for i in data[stream_start_pos:stream_end_pos]]
+        xor_result = self._xor_stream(keystream,data)
+        result = ''.join([chr(i) for i in xor_result])
+
+        result = result[start - stream_start_pos:end - stream_end_pos]
+
+        return result
+
     def get_version(self):
         return 1
 
@@ -184,14 +217,13 @@ if __name__ == '__main__':
 
     x = xipher('a' * 512)
     y = xipher('a' * 512)
-    src = 'hallo' * 100
-    times = 1
+    
+    src = ''
+    for i in xrange(15):
+        src += '+--%3d--|' % i
 
-    begin = time.time()
-    for i in xrange(times): 
-        ctext = x.encrypt(src)
-        ptext = y.decrypt(ctext)
-    end = time.time()
-
-    print len(src) * times / (end-begin), 'bytes per second.'
-        
+    start, end = 16, 40
+    ctext = x.encrypt(src)
+    ptext = y.decrypt_partial(ctext, start, end)
+    print ' ' * start + ptext
+    print y.decrypt(ctext)
