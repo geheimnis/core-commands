@@ -109,9 +109,9 @@ class xipher:
         'times' is how much the counter repeats.
         'iv' is initial vector."""
         ret = ''
-        blocks = ['aaaabbbbccccdddd'] * (bis - von + 1)
+        blocks = ['aaaabbbbccccdddd'] * (bis - von)
         for i in xrange(von, bis):
-            blocks[i] = self._encrypt_block("%8s%8s" % (iv,hex(i)[2:]))
+            blocks[i-von] = self._encrypt_block("%8s%8s" % (iv,hex(i)[2:]))
         blocks = ''.join(blocks)
 
         ciblk = [ord(i) for i in blocks]
@@ -191,6 +191,7 @@ class xipher:
 
         stream_start_block = int(math.floor(start * 1.0 / self.blocksize))
         stream_end_block = int(math.ceil(end * 1.0 / self.blocksize))
+
         stream_start_pos = stream_start_block * self.blocksize
         stream_end_pos = stream_end_block * self.blocksize 
 
@@ -200,7 +201,7 @@ class xipher:
             stream_start_block
         )
         data = [ord(i) for i in data[stream_start_pos:stream_end_pos]]
-        xor_result = self._xor_stream(keystream,data)
+        xor_result = self._xor_stream(keystream, data)
         result = ''.join([chr(i) for i in xor_result])
 
         result = result[start - stream_start_pos:end - stream_end_pos]
@@ -222,8 +223,8 @@ if __name__ == '__main__':
     for i in xrange(15):
         src += '+--%3d--|' % i
 
-    start, end = 16, 40
+    start, end = 20, 40
     ctext = x.encrypt(src)
     ptext = y.decrypt_partial(ctext, start, end)
-    print ' ' * start + ptext
+    print '*' * start + ptext
     print y.decrypt(ctext)
