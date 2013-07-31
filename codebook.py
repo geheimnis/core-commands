@@ -227,6 +227,7 @@ class codebook_manager:
         decryptor, piece_key = None, None
         del decryptor, piece_key
 
+        self._database['books'][user_id][codebook_id]['usage'] += 1
         return (raw_key, msgpack.packb(hints))
 
     def key_reconstruct(self, hints):
@@ -273,6 +274,7 @@ class codebook_manager:
         decryptor, piece_key = None, None
         del decryptor, piece_key
 
+        self._database['books'][user_id][codebook_id]['usage'] += 1
         return raw_key
 
     def _get_user_id(self, codebook_id):
