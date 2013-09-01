@@ -11,6 +11,42 @@ import msgpack
 from crypt import xipher
 from hash import hash_generator
 
+"""
+{
+    options: {
+        key: GENERIC ENCRYPTING KEY - ENCRYPTED USING ACCESS KEY WHEN LOADING
+             DATABASE.
+    },
+    tables: {
+        identities: {
+            ID_1: HASHED FROM IDENTITY INFORMATION.
+            {
+                name: ...,
+
+            },
+            ID_2: {...},
+        },
+        codebooks: {
+            ID_1: HASHED FROM CODEBOOK INFORMATION.
+            {
+                identityID: ...,
+                validFrom: ...,
+                validTo: ...,
+                credentials: ...........................,
+                usage: ...,
+            },
+            ID_2: {...},
+        },
+        pki: {
+            keypairs: {
+            },
+            signatures: {
+            }
+        }
+    }
+}
+"""
+
 class database:
 
     _database = None
@@ -47,7 +83,7 @@ class database:
                 xipher(database_access_key).encrypt(database_encrypt_key)
             # Save the encrypted above key in our new database.
             self._database['options'] = {'key': encrypted_key}
-            self._database['books'] = {}
+            self._database['tables'] = {}
         else:
             try:
                 database_encrypt_key = xipher(database_access_key).decrypt(
@@ -62,4 +98,46 @@ class database:
         database_access_key, database_encrypt_key = None, None
         del database_access_key, database_encrypt_key
 
+    def encrypt(self, plaintext):
+        return self._database_cryptor.encrypt(plaintext)
 
+    def decrypt(self, ciphertext):
+        return self._database_cryptor.decrypt(ciphertext)
+
+    def set(self, table_path, key, value):
+        self._touch_path(table_path)[key] = value
+        return self
+
+    def get(self, table_path, key=None):
+        table = self._touch_path(self, table_path)
+        if key == None:
+            return table
+        if not table.has_key(key):
+            return None
+        return table[key]
+
+    def remove(self, table_path, key):
+        table = self._touch_path(self, table_path)
+        if table.has_key(key):
+            del table[key]
+        return self
+
+    def clear(self, table_path):
+        table = self._touch_path(self, table_path)
+        table = {}
+        return self
+
+    def _touch_path(self, table_path):
+        tree = table_path.split('/')
+        for each in tree:
+            if each == '':
+                raise RuntimeError('Invalid table access path.')
+
+        root = self._database['tables']
+        for each in tree:
+            if not root.has_key(each):
+                root[each] = {}
+            root = root[each]
+
+        return root
+    
