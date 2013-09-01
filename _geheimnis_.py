@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import ConfigParser
 import math
 import os
 import random
@@ -140,4 +141,29 @@ class database:
             root = root[each]
 
         return root
-    
+
+
+### initialize everything ###
+
+#  Read ini
+BASEPATH = os.path.realpath(os.path.dirname(sys.argv[0]))
+ini_relpath = open(os.path.join(BASEPATH, 'confpath.dat'), 'r').read().strip()
+ini_realpath = os.path.realpath(os.path.join(BASEPATH, ini_relpath))
+ini_basedir = os.path.dirname(ini_realpath)
+
+config = ConfigParser.ConfigParser()
+config.read(ini_realpath)
+
+path_databases = os.path.realpath(
+    os.path.join(
+        ini_basedir,
+        config.get('path', 'databases')
+    )
+)
+
+if not path_databases.startswith(ini_basedir):
+    raise RuntimeError(
+        'Database storage path is not within config file container.'
+    )
+
+# Initialize database
