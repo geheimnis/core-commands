@@ -126,7 +126,6 @@ class hash_generator:
 
     def digest(self, text):
         """Generate a hash or HMAC, depending on option 'HMAC' set or not."""
-        print 'digest',self._options
         if self._hmac_package == False:
             # Generate a hash
             raw_digest = self._choosen_algorithm.hash(text)

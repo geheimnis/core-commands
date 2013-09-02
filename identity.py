@@ -6,7 +6,13 @@ Identity Management System
 
 Synopsis
 --------
-python identity.py <USER_IDENTIFIER> <OPERAND> [ARGUMENTS]
+python identity.py \
+    <USER_IDENTIFIER> <DATABASE_ACCESS_KEY> <OPERAND> [ARGUMENTS]
+
+<USER_IDENTIFIER> is used to select the right database. Maybe only a
+HEX-Encoded string not longer than 128 characters.
+
+<DATABASE_ACCESS_KEY> is a HEX-Encoded string, used to open the database.
 
 <OPERAND> must be one of the followings:
     list    List all stored identities under this user.
@@ -20,6 +26,7 @@ Description
 1. list
 
 """
+from hash import object_hasher
 
 from _geheimnis_ import get_database
 
@@ -122,6 +129,11 @@ class identity:
             if self._contact: ret['contact'] = self._contact
             if self._recognize: ret['recognize'] = self._recognize
             return ret
+
+    def get_id(self):
+        if not self._loaded: return
+        hasher = object_hasher('SHA-1')
+        return hasher.hash(self.__str__()).encode('hex')
 
     def _filter_dict(self, dictobj, possible_keys):
         for each in dictobj:

@@ -168,6 +168,13 @@ if not path_databases.startswith(ini_basedir):
 
 # Initialize database loader
 def get_database(user_identifier, access_key):
+    user_identifier = user_identifier.strip().lower()
+    if \
+        user_identifier.translate(None, '0123456789abcdef') != '' or \
+        len(user_identifier) not in xrange(0, 129):
+        raise RuntimeError(
+            'Invalid User Identifier'
+        )
     uri = os.path.realpath(os.path.join(path_databases, user_identifier))
     if not uri.startswith(path_databases):
         raise RuntimeError(
