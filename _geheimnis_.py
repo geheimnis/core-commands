@@ -48,7 +48,7 @@ from hash import hash_generator
 }
 """
 
-class database:
+class _database:
 
     _database = None
     _database_cryptor = None
@@ -166,4 +166,11 @@ if not path_databases.startswith(ini_basedir):
         'Database storage path is not within config file container.'
     )
 
-# Initialize database
+# Initialize database loader
+def get_database(user_identifier, access_key):
+    uri = os.path.realpath(os.path.join(path_databases, user_identifier))
+    if not uri.startswith(path_databases):
+        raise RuntimeError(
+            'Invalid user identifier specified.'
+        )
+    return _database(uri, access_key)

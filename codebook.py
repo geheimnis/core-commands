@@ -29,13 +29,13 @@ encrypted.
 import math
 import os
 import random
-import shelve
 import sys
 
 import msgpack
 
 from crypt import xipher
 from hash import hash_generator
+from _geheimnis_ import get_database
 
 class codebook_manager:
 
