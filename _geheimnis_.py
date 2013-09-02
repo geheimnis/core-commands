@@ -49,8 +49,8 @@ from hash import hash_generator
 """
 class output_formator:
     
-    def result(self, result):
-        self._leader_output(result, '+')
+    def result(self, result, code=''):
+        self._leader_output(result, '+' + str(code))
 
     def error(self, error, code=''):
         self._leader_output(error, 'X' + str(code))

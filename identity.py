@@ -231,7 +231,22 @@ if __name__ == '__main__':
 
     elif operand == 'delete':
         database.remove('identities', argument)
-        output.result('Deleted.')
+        output.result('Deleted.', 200)
 
     elif operand == 'add':
-        output.error('Not yet implemented.', 501) # XXX WTF
+        try:
+            new_id_instance = identity(argument)
+        except Exception,e:
+            output.error('Error reading input: %s' % e, 400)
+            exit()
+
+        try:
+            new_id = new_id_instance.get_id()
+            new_id_string = str(new_id_instance)
+
+            database.set('identities', new_id, new_id_string)
+        except Exception,e:
+            output.error('Error saving identity: %s' % e, 500)
+            exit()
+
+        output.result(new_id, 201)
