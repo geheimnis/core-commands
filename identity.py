@@ -28,8 +28,6 @@ Description
 """
 from hash import object_hasher
 
-from _geheimnis_ import get_database
-
 class identity:
 
     _title, _describe, _contact, _recognize = '','',{},{}
@@ -172,5 +170,25 @@ class identity:
             id/card, id/passport
         """.split(',')]
 
-test = identity()
-print test.get_contact_methods()
+if __name__ == '__main__':
+    import sys
+    from _geheimnis_ import get_database, output_formator
+
+    output = output_formator()
+
+    try:
+        user_identifier, db_access_key, operand = sys.argv[1:4]
+        argument = ''
+        if len(sys.argv) > 4:
+            argument = ' '.join(sys.argv[4:])
+    except Exception,e:
+        output.error("Usage: python identity.py " +\
+            "<USER_IDENTIFIER> <DB_ACCESS_KEY> <OPERAND> [ARGUMENTS]")
+        exit()
+
+    try:
+        db_access_key = db_access_key.decode('hex')
+        database = get_database(user_identifier, db_access_key)
+    except:
+        output.error('Cannot connect to database.', 403)
+        exit()

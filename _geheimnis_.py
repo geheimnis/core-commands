@@ -47,6 +47,18 @@ from hash import hash_generator
     }
 }
 """
+class output_formator:
+    
+    def result(self, result):
+        self._leader_output(result, '+')
+
+    def error(self, error, code=''):
+        self._leader_output(error, 'X' + str(code))
+
+    def _leader_output(self, text, leader):
+        text = str(text)
+        print '\n'.join([('[%s] ' % leader) + i for i in text.split('\n')])
+
 
 class _database:
 
