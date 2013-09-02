@@ -243,8 +243,11 @@ if __name__ == '__main__':
         try:
             new_id = new_id_instance.get_id()
             new_id_string = str(new_id_instance)
-
-            database.set('identities', new_id, new_id_string)
+            
+            if new_id != '':
+                database.set('identities', new_id, new_id_string)
+            else:
+                raise Exception('Identity not loaded out of unknown reason.')
         except Exception,e:
             output.error('Error saving identity: %s' % e, 500)
             exit()
