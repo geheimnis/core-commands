@@ -160,9 +160,12 @@ class identity:
 
     def get_contact_methods(self):
         return [i.strip() for i in """
-            phone, mobile, fax,
-            email, qq, xmpp, msn, icq, gtalk, aim, irc,
-            web, addr 
+            phone, mobile, fax, email, addr,
+            im/qq, im/xmpp, im/msn, im/icq, im/gtalk, im/aim,
+            im/irc, im/yy, im/fetion, im/alibaba,
+            web/site, web/baidu, web/facebook, web/twitter,
+            web/googleplus, web/sinaweibo,
+            other
         """.split(',')]
 
     def get_recognize_methods(self):
@@ -189,12 +192,12 @@ if __name__ == '__main__':
             "<USER_IDENTIFIER> <DB_ACCESS_KEY> <OPERAND> [ARGUMENTS]")
         exit()
 
-#    try:
-    db_access_key = db_access_key.decode('hex')
-    database = get_database(user_identifier, db_access_key)
-#    except Exception,e:
-#        output.error('Cannot connect to database. Reason: %s' % e, 401)
-#        exit()
+    try:
+        db_access_key = db_access_key.decode('hex')
+        database = get_database(user_identifier, db_access_key)
+    except Exception,e:
+        output.error('Cannot connect to database. Reason: %s' % e, 401)
+        exit()
 
     operand = operand.strip().lower()
     if operand not in ['list', 'add', 'delete', 'consult']:
@@ -231,4 +234,4 @@ if __name__ == '__main__':
         output.result('Deleted.')
 
     elif operand == 'add':
-        output.result('Not yet implemented.', 501) # XXX WTF
+        output.error('Not yet implemented.', 501) # XXX WTF

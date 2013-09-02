@@ -104,7 +104,7 @@ class _database:
                 )
             except Exception,e:
                 raise RuntimeError(
-                    'Failed to decrypt database. Reason: %s' % e
+                    'Failed to decrypt database. %s' % e
                 )
         self._database_cryptor = xipher(database_encrypt_key)
 
@@ -131,13 +131,13 @@ class _database:
         return table[key]
 
     def remove(self, table_path, key):
-        table = self._touch_path(self, table_path)
+        table = self._touch_path(table_path)
         if table.has_key(key):
             del table[key]
         return self
 
     def clear(self, table_path):
-        table = self._touch_path(self, table_path)
+        table = self._touch_path(table_path)
         table = {}
         return self
 

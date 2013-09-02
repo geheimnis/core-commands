@@ -192,15 +192,15 @@ class xipher:
         #iv = self._md5_hasher.digest(rand + data)[:self.ivsize]
         check_iv = self._md5_hasher.digest(rand + result)[:self.ivsize]
 
-        print '## ',check_iv
+#        print '## ',check_iv
         check_iv = self._md5_hasher.digest(rand + result)[:self.ivsize]
 
-        print '## ',check_iv
+#        print '## ',check_iv
         check_iv = hashlib.md5(rand + result).hexdigest()[:self.ivsize]
-        print '** ',check_iv
+#        print '** ',check_iv
         
         if check_iv == orig_iv:
-            print 'verified.'
+#            print 'verified.'
             return result
         else:
             print check_iv
