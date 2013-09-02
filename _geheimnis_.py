@@ -103,8 +103,9 @@ class _database:
                     self._database['options']['key']
                 )
             except Exception,e:
-                print e
-                raise RuntimeError('Failed to decrypt database.')
+                raise RuntimeError(
+                    'Failed to decrypt database. Reason: %s' % e
+                )
         self._database_cryptor = xipher(database_encrypt_key)
 
         # Clear keys

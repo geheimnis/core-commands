@@ -189,6 +189,43 @@ if __name__ == '__main__':
     try:
         db_access_key = db_access_key.decode('hex')
         database = get_database(user_identifier, db_access_key)
-    except:
-        output.error('Cannot connect to database.', 403)
+    except Exception,e:
+        output.error('Cannot connect to database. Reason: %s' % e, 401)
         exit()
+
+    operand = operand.trim().lower()
+    if operand not in ['list', 'add', 'delete', 'consult']:
+        output.error('Unrecognized operand.', 405)
+        exit()
+
+
+    if operand == 'list':
+        result = database.get('identities')
+        output.result(
+            json.dumps(
+                result.keys()
+            )
+        )
+
+    elif operand == 'consult':
+        if argument == 'contact':
+            output.result(
+                json.dumps(
+                    identity().get_contact_methods()
+                )
+            )
+        elif argument == 'recognize':
+            output.result(
+                json.dumps(
+                    identity().get_recognize_methods()
+                )
+            )
+        else:
+            output.error('Consult failed.', 400)
+
+    elif operand == 'delete':
+        database.remove('identities', argument)
+        output.result('Deleted.')
+
+    elif operand == 'add':
+        output.result('Not yet implemented.', 501) # XXX WTF
