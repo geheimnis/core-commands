@@ -62,7 +62,6 @@ class hash_generator:
         self._update()
 
     def _output(self, binary_digest):
-        print 'output',self._options['algorithm'] , self._options['output_format']
         output_format = self._options['output_format'].upper()
         if output_format == 'HEX': return binary_digest.encode('hex')
         if output_format == 'BASE64': return binary_digest.encode('base64')
@@ -127,7 +126,7 @@ class hash_generator:
 
     def digest(self, text):
         """Generate a hash or HMAC, depending on option 'HMAC' set or not."""
-        print 'digest',self._options['algorithm'] , self._options['output_format']
+        print 'digest',self._options
         if self._hmac_package == False:
             # Generate a hash
             raw_digest = self._choosen_algorithm.hash(text)
@@ -141,6 +140,40 @@ class hash_generator:
                 )
             )
         return self._output(raw_digest)
+
+class object_hasher:
+    
+    def __init__(self, algorithm):
+        self.hasher = hash_generator()
+        self.hasher.option({
+            'algorithm': algorithm,
+            'output_format': 'raw',
+        })
+
+    def hash(self, obj):
+        typ = type(obj)
+        if typ in [str, bool, int, float]:
+            self.hasher.option('HMAC', False)
+            return self.hasher.digest(str(typ) + str(obj))
+        elif typ in [list, tuple]:
+            target = ''.join([
+                self.hash(i) for i in obj
+            ])
+            self.hasher.option('HMAC', False)
+            return self.hasher.digest(str(typ) + target)
+        elif typ == dict:
+            result_list = []
+            for key in obj:
+                target = self.hash(obj[key])
+                self.hasher.option('HMAC', self.hash(key))
+                result_list.append(
+                    self.hasher.digest(target)
+                )
+            result_list.sort()
+            return self.hash(result_list)
+        else:
+            raise Exception('Not recognized type of object for hashing.')
+            
 
 
 if __name__ == '__main__':

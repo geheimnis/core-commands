@@ -25,15 +25,23 @@ from _geheimnis_ import get_database
 
 class identity:
 
-    def __init__(self, init_param=None):
-        pass
+    _title, _describe, _contact, _recognize = '','',{},{}
 
-    def create(self, title, describe, **argv):
+    _loaded = False
+
+    def __init__(self, init_string=None):
+        if init_string != None:
+            self.load_string(init_string)
+
+    def initialize(self, title, describe, **argv):
         """Create a new identity.
 
-        Recognized arguments are:
-            title       size: [5, 30], a title of this new identity.
-            describe    size: [0, 140], a brief description.
+        Arguments:
+
+        title       size: [5, 30], a title of this new identity.
+        describe    size: [0, 140], a brief description.
+
+        argv        with following possibilities:
             contact     dict(associative array), with recognized keys as
                         listed:
                             phone, mobile, fax, email, addr,
@@ -45,22 +53,90 @@ class identity:
             recognize   dict(associative array), with recognized keys as
                         listed:
                             id/card, id/passport
+
+                    note that for each associative array, with given key user
+                    can specify an array of multiple values. Each value have
+                    same limits in length: [1,256].
+
+        All above item values are limited to a charset with:
+            a-z A-Z 0-9 _@#/\.:=+
         """
-        
+       
+        test_result = self._test_data(title, describe, **argv)
+        if test_result == False: return False
+
+        self._title, self._describe, self._contact, self._recognize =\
+            test_result
+        self._loaded = True
+
+    def _test_data(self, title, describe, **argv):
         passed = (
-            (self.filter_string(title) in xrange(5,31)) and
-            (self.filter_string(describe) in xrange(0,141)
+            (self._filter_string(title) in xrange(5,31)) and
+            (self._filter_string(describe) in xrange(0,141))
         )
 
         contact, recognize = {}, {}
 
         if argv.has_key('contact'):
-            pass
+            passed &= self._filter_dict(
+                argv['contact'],
+                self.get_contact_methods()
+            )
 
         if argv.has_key('recognize'):
-            pass
+            passed &= self._filter_dict(
+                argv['recognize'],
+                self.get_recognize_methods()
+            )
+        if passed == True:
+            return title, describe, contact, recognize
+        else:
+            return False
 
-    def filter_string(self, string):
+    def load_string(self, string):
+        try:
+            title = string['title']
+            describe = string['describe']
+            contact, recognize = {}, {}
+            if string.has_key('contact'): contact = string['contact']
+            if string.has_key('recognize'): contact = string['recognize']
+
+            self.initialize(
+                title,
+                describe,
+                contact=contact,
+                recognize=recognize
+            )
+
+        except:
+            raise RuntimeError('Failed to load given identity data.')
+
+    def __str__(self):
+        if not self._loaded:
+            return ''
+        else:
+            ret = {
+                'title': self._title,
+                'describe': self._describe,
+            }
+            if self._contact: ret['contact'] = self._contact
+            if self._recognize: ret['recognize'] = self._recognize
+            return ret
+
+    def _filter_dict(self, dictobj, possible_keys):
+        for each in dictobj:
+            if not each in possible_keys:
+                return False
+            if type(dictobj[each]) == str:
+                dictobj[each] = [dictobj[each],]
+            elif type(dictobj[each]) != list:
+                return False
+            for item in dictobj[each]:
+                if not self._filter_string(item) in xrange(1,257):
+                    return False
+        return True
+
+    def _filter_string(self, string):
         if type(string) != str:
             return None
         string = string.lower().translate(
