@@ -172,6 +172,9 @@ class identity:
 
 if __name__ == '__main__':
     import sys
+
+    import json
+
     from _geheimnis_ import get_database, output_formator
 
     output = output_formator()
@@ -186,14 +189,14 @@ if __name__ == '__main__':
             "<USER_IDENTIFIER> <DB_ACCESS_KEY> <OPERAND> [ARGUMENTS]")
         exit()
 
-    try:
-        db_access_key = db_access_key.decode('hex')
-        database = get_database(user_identifier, db_access_key)
-    except Exception,e:
-        output.error('Cannot connect to database. Reason: %s' % e, 401)
-        exit()
+#    try:
+    db_access_key = db_access_key.decode('hex')
+    database = get_database(user_identifier, db_access_key)
+#    except Exception,e:
+#        output.error('Cannot connect to database. Reason: %s' % e, 401)
+#        exit()
 
-    operand = operand.trim().lower()
+    operand = operand.strip().lower()
     if operand not in ['list', 'add', 'delete', 'consult']:
         output.error('Unrecognized operand.', 405)
         exit()

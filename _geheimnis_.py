@@ -91,15 +91,15 @@ class _database:
             # Pick a random database encrypting key.
             database_encrypt_key = \
                 ''.join(chr(random.randint(0,255)) for i in xrange(256))
-            # Encrypt the above key using 'database_access_key'.
+            # Encrypt the above key using 'access_key'.
             encrypted_key = \
-                xipher(database_access_key).encrypt(database_encrypt_key)
+                xipher(access_key).encrypt(database_encrypt_key)
             # Save the encrypted above key in our new database.
             self._database['options'] = {'key': encrypted_key}
             self._database['tables'] = {}
         else:
             try:
-                database_encrypt_key = xipher(database_access_key).decrypt(
+                database_encrypt_key = xipher(access_key).decrypt(
                     self._database['options']['key']
                 )
             except Exception,e:
@@ -109,8 +109,8 @@ class _database:
         self._database_cryptor = xipher(database_encrypt_key)
 
         # Clear keys
-        database_access_key, database_encrypt_key = None, None
-        del database_access_key, database_encrypt_key
+        access_key, database_encrypt_key = None, None
+        del access_key, database_encrypt_key
 
     def encrypt(self, plaintext):
         return self._database_cryptor.encrypt(plaintext)
@@ -123,7 +123,7 @@ class _database:
         return self
 
     def get(self, table_path, key=None):
-        table = self._touch_path(self, table_path)
+        table = self._touch_path(table_path)
         if key == None:
             return table
         if not table.has_key(key):
