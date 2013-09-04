@@ -18,6 +18,8 @@ HEX-Encoded string not longer than 128 characters.
     list    List all stored identities under this user.
     add     Examine and insert a new identity, which takes [ARGUMENTS] as
             configuration of this new identity.
+    test    Like 'add', but not actually add this identity, only test and
+            gives out ID, for examination.
     delete  [ARGUMENTS] here is the target identity's ID.
 
 Description
@@ -25,6 +27,8 @@ Description
 1. list
 
 """
+import json
+
 from hash import object_hasher
 
 class identity:
@@ -48,7 +52,9 @@ class identity:
         All above item values are limited to a charset with:
             a-z A-Z 0-9 _@#/\.:=+
         """
-       
+        title = title.strip()
+        describe = describe.strip()
+
         test_result = self._test_data(title, describe)
         if test_result == False: return False
 
@@ -68,25 +74,26 @@ class identity:
 
     def load_string(self, string):
         try:
+            string = json.loads(string)
             title = string['title']
             describe = string['describe']
-
+            
             self.initialize(
                 title,
                 describe,
             )
 
-        except:
+        except Exception,e:
             raise RuntimeError('Failed to load given identity data.')
 
     def __str__(self):
         if not self._loaded:
             return ''
         else:
-            ret = {
+            ret = json.dumps({
                 'title': self._title,
                 'describe': self._describe,
-            }
+            })
             return ret
 
     def get_id(self):
@@ -95,15 +102,15 @@ class identity:
         return hasher.hash(self.__str__()).encode('hex')
 
     def _filter_string(self, string):
-        if type(string) != str:
-            return None
-        string = string.lower().translate(
-            None,
-            'abcdefghijklmnopqrstuvwxyz0123456789_@#/\.:=+'
-        )
-        if string == '':
-            return len(string)
-        else:
+        try:
+            ret = len(string)
+            for i in 'abcdefghijklmnopqrstuvwxyz0123456789_@#/\.:=+':
+                string = string.replace(i, '')
+            if string == '':
+                return ret
+            else:
+                return None
+        except Exception,e:
             return None
 
 if __name__ == '__main__':
@@ -119,7 +126,7 @@ if __name__ == '__main__':
         user_identifier, db_access_key, operand = sys.argv[1:4]
         argument = ''
         if len(sys.argv) > 4:
-            argument = ' '.join(sys.argv[4:])
+            argument = ' '.join(sys.argv[4:]).decode('hex')
     except Exception,e:
         output.error("Usage: python identity.py " +\
             "<USER_IDENTIFIER> <DB_ACCESS_KEY> <OPERAND> [ARGUMENTS]")
@@ -133,10 +140,6 @@ if __name__ == '__main__':
         exit()
 
     operand = operand.strip().lower()
-    if operand not in ['list', 'add', 'delete', 'consult']:
-        output.error('Unrecognized operand.', 405)
-        exit()
-
 
     if operand == 'list':
         result = database.get('identities')
@@ -150,7 +153,7 @@ if __name__ == '__main__':
         database.remove('identities', argument)
         output.result('Deleted.', 200)
 
-    elif operand == 'add':
+    elif operand in ['add', 'test']:
         try:
             new_id_instance = identity(argument)
         except Exception,e:
@@ -160,13 +163,25 @@ if __name__ == '__main__':
         try:
             new_id = new_id_instance.get_id()
             new_id_string = str(new_id_instance)
+
+            if type(new_id) != str:
+                raise Exception(
+                    'Invalid parameters. Cannot be loaded.'
+                )
             
-            if new_id != '':
-                database.set('identities', new_id, new_id_string)
+            if operand == 'add':
+                if new_id != '':
+                    database.set('identities', new_id, new_id_string)
+                else:
+                    raise Exception(
+                        'Identity not loaded out of unknown reason.'
+                    )
             else:
-                raise Exception('Identity not loaded out of unknown reason.')
+                output.result(new_id, 201)
         except Exception,e:
             output.error('Error saving identity: %s' % e, 500)
             exit()
 
-        output.result(new_id, 201)
+    else:
+        output.error('Unrecognized operand.', 405)
+        exit()
