@@ -18,19 +18,50 @@ When <OPERAND> is 'query', <ARGUMENTS> is a string of Result-ID.
 When <OPERAND> is 'run', <ARGUMENTS> are instructions of running an actual
 command.
 
-Arguments <USER-IDENTIFIER>, <DATABASE-ACCESS-KEY>, [ARGUMENTS] are encoded
-in HEX.
+Arguments <DATABASE-ACCESS-KEY>, [ARGUMENTS] are encoded in HEX.
 """
 
 if __name__ == '__main__':
     import sys
     import os
 
-    from _geheimnis_ import get_database
+    from _geheimnis_ import get_database, output_formator
 
-    if len(sys.argv) < 4:
-        print "Usage: python invoke.py <USER-IDENTIFIER>" + \
-            "<DATABASE-ACCESS-KEY> <OPERAND> [ARGUMENTS]"
+    output = output_formator()
+
+    try:
+        if len(sys.argv) < 4:
+            raise Exception()
+
+        user_identifier, db_access_key, operand = \
+            sys.argv[1:4]
+        arguments = ''.join(sys.argv[4:]).decode('hex')
+        base_path = os.path.realpath(os.path.dirname(sys.argv[0])
+    except Exception,e:        
+        output.error("Usage: python invoke.py <USER-IDENTIFIER>" + \
+            "<DATABASE-ACCESS-KEY> <OPERAND> [ARGUMENTS]", 400)
         exit()
 
-    
+    try:
+        db_access_key = db_access_key.decode('hex')
+        database = get_database(user_identifier, db_access_key)
+    except Exception,e:
+        output.error('Cannot connect to database. Reason: %s' % e, 401)
+        exit()
+
+    operand = operand.strip().lower()
+
+    if operand == 'query':
+        query_result = database.get('invoke/process_result', arguments)
+        if query_result == None:
+            output.error('No result.', 404)
+        else:
+            output.result(query_result, 200)
+        exit()
+
+    elif operand == 'run':
+        pass
+
+    else:
+        output.error('Unrecognized operand.', 405)
+        exit()
