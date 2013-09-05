@@ -3,6 +3,7 @@
 import ConfigParser
 import math
 import os
+import uuid
 import random
 import shelve
 import sys
@@ -194,3 +195,12 @@ def get_database(user_identifier, access_key):
             'Invalid user identifier specified.'
         )
     return _database(uri, access_key)
+
+# def UUID generator
+def get_uuid(chaos=''):
+    u4 = uuid.uuid4()
+    u5 = uuid.uuid5(u4, chaos)
+    u1 = uuid.uuid1()
+
+    u3 = uuid.uuid3(u5, str(u1))
+    return str(u3)

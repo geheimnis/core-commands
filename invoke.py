@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Async Generic Command Invoker
 =============================
@@ -22,10 +24,12 @@ Arguments <DATABASE-ACCESS-KEY>, [ARGUMENTS] are encoded in HEX.
 """
 
 if __name__ == '__main__':
+    import subprocess
     import sys
     import os
+    import random
 
-    from _geheimnis_ import get_database, output_formator
+    from _geheimnis_ import get_database, get_uuid, output_formator
 
     output = output_formator()
 
@@ -33,17 +37,18 @@ if __name__ == '__main__':
         if len(sys.argv) < 4:
             raise Exception()
 
-        user_identifier, db_access_key, operand = \
+        user_identifier, db_access_key_hex, operand = \
             sys.argv[1:4]
-        arguments = ''.join(sys.argv[4:]).decode('hex')
-        base_path = os.path.realpath(os.path.dirname(sys.argv[0])
+        arguments_hex = ''.join(sys.argv[4:])
+        arguments = arguments_hex.decode('hex')
+        base_path = os.path.realpath(os.path.dirname(sys.argv[0]))
     except Exception,e:        
         output.error("Usage: python invoke.py <USER-IDENTIFIER>" + \
             "<DATABASE-ACCESS-KEY> <OPERAND> [ARGUMENTS]", 400)
         exit()
 
     try:
-        db_access_key = db_access_key.decode('hex')
+        db_access_key = db_access_key_hex.decode('hex')
         database = get_database(user_identifier, db_access_key)
     except Exception,e:
         output.error('Cannot connect to database. Reason: %s' % e, 401)
@@ -60,7 +65,18 @@ if __name__ == '__main__':
         exit()
 
     elif operand == 'run':
-        pass
+        new_id = get_uuid(arguments)
+        subprocess.Popen(\
+            [\
+                'python',
+                os.path.join(base_path, '_invoke_.py'),
+                user_identifier,
+                db_access_key_hex,
+                new_id,
+                arguments_hex,
+            ]\
+        )
+        output.result(new_id, 200)                
 
     else:
         output.error('Unrecognized operand.', 405)
