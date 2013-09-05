@@ -1,18 +1,36 @@
 """
-Generic Command Invoker
-=======================
+Async Generic Command Invoker
+=============================
 
-We recommend to use this single command, as follows, to invoke other core
-commands and thus simplify the complicate file structure in this directory.
+This generic invoker provides a simplified interface to web-interface. It
+provides 3 features:
+1. Invoke another command, and reserves a Result-ID for the caller.
+2. Query the result cache with given Result-ID.
+3. Simplify the interface to complex commands.
 
-Usage: python invoke.py OPERAND [ARGUMENTS]
+SYNPOSIS
+--------
+python invoke.py <USER-IDENTIFIER> <DATABASE-ACCESS-KEY> <OPERAND> [ARGUMENTS]
 
-OPERAND must be one of the follows:
-    hash
+<OPERAND> may be either 'run' or 'query'.
 
-And [ARGUMENTS] are wholely passed to corresponding processing program,
-without modification.
+When <OPERAND> is 'query', <ARGUMENTS> is a string of Result-ID.
+When <OPERAND> is 'run', <ARGUMENTS> are instructions of running an actual
+command.
+
+Arguments <USER-IDENTIFIER>, <DATABASE-ACCESS-KEY>, [ARGUMENTS] are encoded
+in HEX.
 """
 
 if __name__ == '__main__':
-    pass
+    import sys
+    import os
+
+    from _geheimnis_ import get_database
+
+    if len(sys.argv) < 4:
+        print "Usage: python invoke.py <USER-IDENTIFIER>" + \
+            "<DATABASE-ACCESS-KEY> <OPERAND> [ARGUMENTS]"
+        exit()
+
+    
