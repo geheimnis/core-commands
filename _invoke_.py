@@ -17,7 +17,7 @@ python _invoke_.py <USER-IDENTIFIER> <DATABASE-ACCESS-KEY> <RESULT-SAVE-ID> \
 import subprocess
 import sys
 import os
-import random
+import time
 
 from _geheimnis_ import get_database
 
@@ -37,4 +37,18 @@ except Exception,e:
     print e
     exit()
 
-print "_invoke_"
+argument_list = arguments.split(' ')
+
+try:
+    result = subprocess.check_output(argument_list)
+    print result
+except:
+    result = False
+
+data_piece = {
+    'time': time.time(),
+    'command': arguments,
+    'result': result,
+}
+
+database.set('invoke/process_result', result_save_key, data_piece)

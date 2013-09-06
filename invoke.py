@@ -27,7 +27,7 @@ if __name__ == '__main__':
     import subprocess
     import sys
     import os
-    import random
+    import json
 
     from _geheimnis_ import get_database, get_uuid, output_formator
 
@@ -39,8 +39,7 @@ if __name__ == '__main__':
 
         user_identifier, db_access_key_hex, operand = \
             sys.argv[1:4]
-        arguments_hex = ''.join(sys.argv[4:])
-        arguments = arguments_hex.decode('hex')
+        arguments_raw = ''.join(sys.argv[4:])
         base_path = os.path.realpath(os.path.dirname(sys.argv[0]))
     except Exception,e:        
         output.error("Usage: python invoke.py <USER-IDENTIFIER>" + \
@@ -57,14 +56,20 @@ if __name__ == '__main__':
     operand = operand.strip().lower()
 
     if operand == 'query':
-        query_result = database.get('invoke/process_result', arguments)
+        query_result = database.get('invoke/process_result', arguments_raw)
         if query_result == None:
             output.error('No result.', 404)
         else:
-            output.result(query_result, 200)
+            output.result(json.dumps(query_result), 200)
         exit()
 
     elif operand == 'run':
+        try:
+            arguments = arguments_hex.decode('hex')
+        except:
+            output.error('Invalid argument.')
+            exit()
+
         new_id = get_uuid(arguments)
         subprocess.Popen(\
             [\
