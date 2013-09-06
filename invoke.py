@@ -40,9 +40,10 @@ CONFIG_COMMANDS = {
         'identity-test': {'domain': 'identity', 'operand': 'test', 'arg': True},
         'identity-delete': {'domain': 'identity', 'operand': 'delete', 'arg': True},
         'identity-add': {'domain': 'identity', 'operand': 'add', 'arg': True},
+        'test-instant': {'domain': 'test', 'operand': 'testOperand', 'arg': False},
     },
     'wait': {
-
+        'test-wait': {'domain': 'test', 'operand': 'testOperand', 'arg': False},
     },
 }
 
