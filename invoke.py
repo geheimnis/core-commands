@@ -14,20 +14,27 @@ SYNPOSIS
 --------
 python invoke.py <USER-IDENTIFIER> <DATABASE-ACCESS-KEY> <OPERAND> [ARGUMENTS]
 
-<OPERAND> may be either 'run' or 'query'.
+<OPERAND> may be 'run', 'query', or 'optimize'.
 
-When <OPERAND> is 'query', <ARGUMENTS> is a string of Result-ID.
-When <OPERAND> is 'run', <ARGUMENTS> are instructions of running an actual
+When <OPERAND> is 'query', [ARGUMENTS] is a string of Result-ID.
+When <OPERAND> is 'run', [ARGUMENTS] are instructions of running an actual
 command.
+When <OPERAND> is 'optimize', [ARGUMENTS] will be ignored. Old results, which
+is older as 60 seconds, will be deleted. Currently we do not put this number
+into config file.
 
 Arguments <DATABASE-ACCESS-KEY>, [ARGUMENTS] are encoded in HEX.
 """
+
+CONFIG_TABLE = 'invoke/process_result'
+CONFIG_RESULT_LIFE = 60
 
 if __name__ == '__main__':
     import subprocess
     import sys
     import os
     import json
+    import time
 
     from _geheimnis_ import get_database, get_uuid, output_formator
 
@@ -56,7 +63,7 @@ if __name__ == '__main__':
     operand = operand.strip().lower()
 
     if operand == 'query':
-        query_result = database.get('invoke/process_result', arguments_raw)
+        query_result = database.get(CONFIG_TABLE, arguments_raw)
         if query_result == None:
             output.error('No result.', 404)
         else:
@@ -65,7 +72,7 @@ if __name__ == '__main__':
 
     elif operand == 'run':
         try:
-            arguments = arguments_hex.decode('hex')
+            arguments = arguments_raw.decode('hex')
         except:
             output.error('Invalid argument.')
             exit()
@@ -78,10 +85,20 @@ if __name__ == '__main__':
                 user_identifier,
                 db_access_key_hex,
                 new_id,
-                arguments_hex,
+                arguments_raw,
             ]\
         )
-        output.result(new_id, 200)                
+        output.result(new_id, 200)
+
+    elif operand == 'optimize':
+        data_list = database.get(CONFIG_TABLE)
+        deadline = time.time() - CONFIG_RESULT_LIFE
+        delete_keys = []
+        for each in data_list:
+            if data_list[each]['time'] < deadline:
+                delete_keys.append(each)
+        for key in delete_keys:
+            database.remove(CONFIG_TABLE, key)
 
     else:
         output.error('Unrecognized operand.', 405)

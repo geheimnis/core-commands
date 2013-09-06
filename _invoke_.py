@@ -20,6 +20,7 @@ import os
 import time
 
 from _geheimnis_ import get_database
+from invoke import CONFIG_TABLE
 
 try:
     if len(sys.argv) < 5:
@@ -51,4 +52,4 @@ data_piece = {
     'result': result,
 }
 
-database.set('invoke/process_result', result_save_key, data_piece)
+database.set(CONFIG_TABLE, result_save_key, data_piece)
