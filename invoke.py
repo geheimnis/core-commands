@@ -67,7 +67,7 @@ if __name__ == '__main__':
         arguments_raw = ''.join(sys.argv[4:])
         base_path = os.path.realpath(os.path.dirname(sys.argv[0]))
     except Exception,e:        
-        output.error("Usage: python invoke.py <USER-IDENTIFIER>" + \
+        output.error("Usage: python invoke.py <USER-IDENTIFIER> " + \
             "<DATABASE-ACCESS-KEY> <OPERAND> [ARGUMENTS]", 400)
         exit()
 
