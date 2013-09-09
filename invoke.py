@@ -121,7 +121,7 @@ if __name__ == '__main__':
             command_profile['operand'],
         ]
         if command_profile['arg']:
-            execute_list.append(command_argv.split(' '))
+            execute_list.append(command_argv.encode('hex'))
 
         if execute_instantly:
             print subprocess.check_output(execute_list)

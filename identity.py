@@ -121,7 +121,7 @@ if __name__ == '__main__':
     from _geheimnis_ import get_database, output_formator
 
     output = output_formator()
-
+    
     try:
         user_identifier, db_access_key, operand = sys.argv[1:4]
         argument = ''
