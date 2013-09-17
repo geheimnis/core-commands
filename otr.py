@@ -45,7 +45,7 @@ When there is at the N-th place a difference between two bits, flip the cor-
 responsing bit in the same place of the original ciphertext. Finally, truncate
 your ciphertext, and wrapped it like we have discussed in step 4.
   Now you've produced a plausible forged dialog part, which shall be
-recognized by the pair in this dialog. Have fun!
+recognized by the partners joined in this session. Have fun!
 
 OTR会话开始
 ===========
