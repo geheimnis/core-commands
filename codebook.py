@@ -236,7 +236,7 @@ class codebook_manager:
             return False
 
 if __name__ == '__main__':
-
+    """
     from _geheimnis_ import get_database
     from identity import identity as ID 
     
@@ -247,11 +247,9 @@ if __name__ == '__main__':
 
     x = codebook_manager(db)
 
-    """
     print x.query(me)
     print 'Now add a key'
     x.add(me,''.join(chr(random.randint(0,255)) for i in xrange(1024)),'Hello')
-    """
 
     got = x.query(me)
 
@@ -264,3 +262,4 @@ if __name__ == '__main__':
 
     print rk2 == raw_key
     print rk2.encode('hex')
+    """
