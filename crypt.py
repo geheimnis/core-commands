@@ -144,10 +144,10 @@ class xipher:
         rand = rand.encode('base64')[:self.blocksize]
 
         iv = self._md5_hasher.digest(rand + data)[:self.ivsize]
-        print '## ',iv
+#        print '## ',iv
         
         iv = hashlib.md5(rand + data).hexdigest()[:self.ivsize]
-        print '** ',iv
+#        print '** ',iv
 
         iv0 = iv[:]
         

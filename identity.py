@@ -99,11 +99,12 @@ class identity:
     def get_id(self):
         if not self._loaded: return
         hasher = object_hasher('SHA-1')
-        return hasher.hash(self.__str__()).encode('hex')
+        return hasher.hash(self.__str__()).encode('hex').upper()
 
     def _filter_string(self, string):
         try:
             ret = len(string)
+            string = string.lower()
             for i in 'abcdefghijklmnopqrstuvwxyz0123456789_@#/\.:=+':
                 string = string.replace(i, '')
             if string == '':
