@@ -7,6 +7,11 @@ OTR chatting session manager
 a simple OTR principle inspired chatting session manager. NOT compatible with
 any of existing OTR implementations.
 """
+import time
+
+from hash import hash_generator
+from _geheimnis_ import get_uuid
+
 
 class OTRSession:
 
@@ -72,15 +77,54 @@ OTR会话开始
 的密文长度，然后根据上述第4步的方法封装数据。
   这样您就构建了可以被通信双方认可的伪造对话。祝好运！
 
-
     """
+
+    INIT_METHOD_SHAREDSECRET = 1
+    INIT_METHOD_CODEBOOK = 2
+    INIT_METHOD_PGPLETTER = 4
 
     def __init__(self, database):
         self._database = database
         self._init_message = self._init_message.strip()
 
-    def new(self, use_codebook_id):
-        pass
+    def new(self, buddy_identity, method, **argv):
+        if method not in [1,2,4]:
+            raise Exception("Unrecognized initialization method.")
+        buddy_id = buddy_identity.get_id()
+        if buddy_id == None:
+            raise Exception('Unrecognized buddy.')
+
+        sharedsecret = ''
+        if method == 1:
+            sharedsecret = argv['shared_secret']
+        elif method == 2:
+            pass
+        elif method == 4:
+            pass
+
+        hasher = hash_generator()
+        sharedsecret = hasher.option({
+            'algorithm': 'whirlpool',
+            'output_format': 'raw',           
+        }).digest(sharedsecret)
+
+        authenticate_key = \
+            hasher.option('algorithm', 'SHA-1').digest(sharedsecret)
+
+        chaos = \
+            hasher.option('algorithm', 'MD5').digest(authenticate_key)
+
+        session_id = get_uuid(chaos)
+
+        piece = {
+            'begin_time': time.time(),
+            'shared_secret': sharedsecret,
+            'send': [],
+            'receive': [],
+        }
+
+        self._database.set('otrsessions/%s' % buddy_id, session_id, piece)
+        
 
     def load(self, session_id):
         pass
@@ -88,10 +132,16 @@ OTR会话开始
     def terminate(self):
         pass
 
-    def encrypt(self, plaintext):
+    def set_send(self, plaintext):
         pass
 
-    def decrypt(self, ciphertext):
+    def set_receive(self, ciphertext):
+        pass
+
+    def get_send(self):
+        pass
+
+    def get_receive(self):
         pass
 
 if __name__ == '__main__':
