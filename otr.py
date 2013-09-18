@@ -91,9 +91,13 @@ OTR会话开始
         self._database = database
         self._init_message = self._init_message.strip()
 
-    def new(self, method, **argv):
+    def new(self, buddy_identity, method, **argv):
         if method not in [1,2,4]:
             raise Exception("Unrecognized initialization method.")
+
+        buddy_id = buddy_identity.get_id()
+        if buddy_id == None:
+            raise Exception("Invalid buddy id.")
 
         sharedsecret = ''
         if method == 1:
@@ -105,7 +109,7 @@ OTR会话开始
 
         hasher = hash_generator()
         sharedsecret = hasher.option({
-            'algorithm': 'whirlpool',
+            'algorithm': 'WHIRLPOOL',
             'output_format': 'raw',           
         }).digest(sharedsecret)
 
@@ -121,6 +125,7 @@ OTR会话开始
             'shared_secret': sharedsecret,
             'send': [],
             'receive': [],
+            'buddy_id': buddy_id,
         }
 
         self._database.set('otrsessions', session_id, piece)
@@ -132,7 +137,7 @@ OTR会话开始
 
     def load(self, session_id):
         self._session_id = None
-        self._store_piece = self.database.get('otrsessions', session_id)
+        self._store_piece = self._database.get('otrsessions', session_id)
         if self._store_piece != None and type(self._store_piece) == dict:
             self._session_id = session_id
             return session_id
@@ -220,6 +225,7 @@ OTR会话开始
             self._store_piece['receive'].append({
                 'plaintext': plaintext,
                 'timestamp': timestamp,
+                'buddy_id': self._store_piece['buddy_id'],
             })
 
             return True
@@ -228,10 +234,10 @@ OTR会话开始
             raise Exception('Error loading OTR packet - %s' % e)
              
     def get_send(self):
-        pass
+        return self._store_piece['send'].pop(0)
 
     def get_receive(self):
-        pass
+        return self._store_piece['receive'].pop(0)
 
     def _derive_authenticate_key(self, sharedsecret):
         return hash_generator().option({
@@ -240,5 +246,36 @@ OTR会话开始
         }).digest(sharedsecret)
 
 if __name__ == '__main__':
-    x = OTRSession('')
-    print len(x._init_message)
+
+    from _geheimnis_ import get_database
+    from identity import identity as ID
+    me = ID()
+    me.initialize('testIdentity', '')
+
+    buddy = ID()
+    buddy.initialize('MyBuddy', '')
+
+    db = get_database(me, '0000')
+
+    otrsession = OTRSession(db)
+
+    print '* Generate a session'
+    session_id = otrsession.new(
+        buddy,
+        otrsession.INIT_METHOD_SHAREDSECRET,
+        shared_secret = 'Some secret'
+    )
+    print '- Session ID: %s' % session_id
+
+    otrsession = OTRSession(db)
+    otrsession.load(session_id)
+
+    print '* Get init message'
+    p = otrsession.get_send()
+
+    print '* Set receive'
+    otrsession.set_receive(p)
+
+    print otrsession.get_receive()
+
+    otrsession.terminate()
