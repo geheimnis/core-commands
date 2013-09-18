@@ -159,9 +159,8 @@ OTR会话开始
 
         sharedsecret = self._store_piece['shared_secret']
 
-        authenticate_key = self._derive_authenticate_key(sharedsecret)
         authenticator = hash_generator().option({
-            'HMAC': authenticate_key,
+            'HMAC': self._derive_authenticate_key(sharedsecret),
             'algorithm': 'SHA-1',
             'output_format': 'RAW',
         })
@@ -173,7 +172,6 @@ OTR会话开始
         ciphertext = xipher(sharedsecret).encrypt(new_plaintext)
 
         packet_core = {
-            'session_id': self._session_id,
             'ciphertext': ciphertext,
             'timestamp': time.time(),
         }
@@ -183,13 +181,52 @@ OTR会话开始
         packet = {
             'HMAC': packet_sign,
             'core': packet_core,
+            'session_id': self._session_id,
         }
 
         self._store_piece['send'].append(packet)
 
-    def set_receive(self, ciphertext):
-        pass
+        return True
 
+    def set_receive(self, packet):
+        try:
+            packet_sign, packet_core, session_id = \
+                packet['HMAC'], packet['core'], packet['session_id']
+
+            self.load(session_id)
+            if self._session_id == None:
+                return False
+
+            sharedsecret = self._store_piece['shared_secret']
+            authenticator = hash_generator().option({
+                'HMAC': self._derive_authenticate_key(sharedsecret),
+                'algorithm': 'SHA-1',
+                'output_format': 'RAW',
+            })
+
+            packet_hash = object_hasher('SHA-1').hash(packet_core)
+            packet_sign2 = authenticator.digest(packet_hash)
+            if packet_sign2 != packet_sign:
+                return False
+
+            ciphertext = packet_core['ciphertext']
+            timestamp = packet_core['timestamp']
+
+            plaintext = xipher(sharedsecret).decrypt(ciphertext)
+            head_length = len(packet_sign2)
+            HMAC_head = plaintext[:head_length] # equals to such length
+            plaintext = plaintext[head_length:]
+
+            self._store_piece['receive'].append({
+                'plaintext': plaintext,
+                'timestamp': timestamp,
+            })
+
+            return True
+
+        except Exception,e:
+            raise Exception('Error loading OTR packet - %s' % e)
+             
     def get_send(self):
         pass
 
