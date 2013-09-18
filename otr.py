@@ -9,8 +9,9 @@ any of existing OTR implementations.
 """
 import time
 
-from hash import hash_generator
+from hash import hash_generator, object_hasher
 from _geheimnis_ import get_uuid
+from crypt import xipher
 
 
 class OTRSession:
@@ -123,7 +124,11 @@ OTR会话开始
         }
 
         self._database.set('otrsessions', session_id, piece)
-        return self.load(session_id)
+        if False != self.load(session_id):
+            self.set_send(self._init_message)
+            return session_id
+
+        return False
 
     def load(self, session_id):
         self._session_id = None
@@ -148,11 +153,39 @@ OTR会话开始
         if not self._session_id:
             return False
 
-        authenticate_key = self._derive_authenticate_key(
-            self._store_piece['shared_secret']
-        )
+        if len(plaintext) > len(self._init_message):
+            # This will lead to impossible of forging our session.
+            return False
 
+        sharedsecret = self._store_piece['shared_secret']
 
+        authenticate_key = self._derive_authenticate_key(sharedsecret)
+        authenticator = hash_generator().option({
+            'HMAC': authenticate_key,
+            'algorithm': 'SHA-1',
+            'output_format': 'RAW',
+        })
+
+        plaintext_HMAC = authenticator.digest(plaintext)
+
+        new_plaintext = plaintext_HMAC + plaintext
+
+        ciphertext = xipher(sharedsecret).encrypt(new_plaintext)
+
+        packet_core = {
+            'session_id': self._session_id,
+            'ciphertext': ciphertext,
+            'timestamp': time.time(),
+        }
+        packet_hash = object_hasher('SHA-1').hash(packet_core)
+        packet_sign = authenticator.digest(packet_hash)
+
+        packet = {
+            'HMAC': packet_sign,
+            'core': packet_core,
+        }
+
+        self._store_piece['send'].append(packet)
 
     def set_receive(self, ciphertext):
         pass
