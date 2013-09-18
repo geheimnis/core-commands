@@ -83,16 +83,16 @@ OTR会话开始
     INIT_METHOD_CODEBOOK = 2
     INIT_METHOD_PGPLETTER = 4
 
+    _session_id = None
+    _store_piece = None
+
     def __init__(self, database):
         self._database = database
         self._init_message = self._init_message.strip()
 
-    def new(self, buddy_identity, method, **argv):
+    def new(self, method, **argv):
         if method not in [1,2,4]:
             raise Exception("Unrecognized initialization method.")
-        buddy_id = buddy_identity.get_id()
-        if buddy_id == None:
-            raise Exception('Unrecognized buddy.')
 
         sharedsecret = ''
         if method == 1:
@@ -108,8 +108,7 @@ OTR会话开始
             'output_format': 'raw',           
         }).digest(sharedsecret)
 
-        authenticate_key = \
-            hasher.option('algorithm', 'SHA-1').digest(sharedsecret)
+        authenticate_key = self._derive_authenticate_key(sharedsecret)
 
         chaos = \
             hasher.option('algorithm', 'MD5').digest(authenticate_key)
@@ -123,17 +122,37 @@ OTR会话开始
             'receive': [],
         }
 
-        self._database.set('otrsessions/%s' % buddy_id, session_id, piece)
-        
+        self._database.set('otrsessions', session_id, piece)
+        return self.load(session_id)
 
     def load(self, session_id):
-        pass
+        self._session_id = None
+        self._store_piece = self.database.get('otrsessions', session_id)
+        if self._store_piece != None and type(self._store_piece) == dict:
+            self._session_id = session_id
+            return session_id
+        return False
 
     def terminate(self):
-        pass
+        """Terminate a Session
+
+        The shared secret will be removed. This session ID, however, will be
+        kept with storing its authenticate key."""
+        if self._session_id:
+            self._store_piece = self._derive_authenticate_key(
+                self._store_piece['shared_secret']
+            )
+        self._session_id = None
 
     def set_send(self, plaintext):
-        pass
+        if not self._session_id:
+            return False
+
+        authenticate_key = self._derive_authenticate_key(
+            self._store_piece['shared_secret']
+        )
+
+
 
     def set_receive(self, ciphertext):
         pass
@@ -143,6 +162,12 @@ OTR会话开始
 
     def get_receive(self):
         pass
+
+    def _derive_authenticate_key(self, sharedsecret):
+        return hash_generator().option({
+            'algorithm': 'SHA-1',
+            'output_format': 'RAW'
+        }).digest(sharedsecret)
 
 if __name__ == '__main__':
     x = OTRSession('')
